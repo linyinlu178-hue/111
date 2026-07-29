@@ -103,9 +103,12 @@ class Handler(BaseHTTPRequestHandler):
         self._send(200, json.dumps(out, ensure_ascii=False), 'application/json; charset=utf-8')
     
     def do_GET(self):
-        parsed = urllib.parse.urlparse(self.path)
+        qs = urllib.parse.parse_qs(parsed.query)
         p = parsed.path
         if p == '/api/douyin/hot':
+        if p == '/api/tts':
+            return self.handle_tts(qs)
+
             return self.handle_hot()
         if p.startswith('/api/'):
             return self._send(404, 'unknown api')
