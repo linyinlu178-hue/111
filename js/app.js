@@ -416,12 +416,43 @@ function distHot(id) {
 function escapeHTML(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
 
 function speak(text) {
-  if (!window.speechSynthesis || !text) return;
-  window.speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(text);
-  u.lang = 'en-US';
-  u.rate = 0.85;
-  window.speechSynthesis.speak(u);
+  if (!text) return;
+
+  // 策略1: 先尝试 Web Speech API
+  if (window.speechSynthesis) {
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'en-US';
+    u.rate = 0.85;
+    // 检测是否有可用语音
+    const voices = window.speechSynthesis.getVoices();
+    const hasEnglish = voices.some(v => v.lang.startsWith('en'));
+    if (hasEnglish || voices.length === 0) {
+      // voices.length===0 表示异步加载中，也先尝试
+      u.onerror = function() {
+        // Web Speech 失败，用在线 TTS 兜底
+        speakOnline(text);
+      };
+      window.speechSynthesis.speak(u);
+      return;
+    }
+  }
+
+  // 策略2: Web Speech 不可用时，使用在线 TTS
+  speakOnline(text);
+}
+
+// 在线 TTS：使用 Google TTS 免费接口
+var _ttsAudio = null;
+function speakOnline(text) {
+  // 停止之前的播放
+  if (_ttsAudio) { _ttsAudio.pause(); _ttsAudio = null; }
+  var url = 'https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=en&q=' + encodeURIComponent(text);
+  var a = new Audio(url);
+  a.play().catch(function() {
+    toast('语音播放失败，请检查网络');
+  });
+  _ttsAudio = a;
 }
 
 function toast(msg) {
