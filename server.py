@@ -101,7 +101,7 @@ class Handler(BaseHTTPRequestHandler):
         items = fetch_hot()
         out = {'ok': True, 'source': 'live' if items else 'curated', 'count': len(items), 'items': items}
         self._send(200, json.dumps(out, ensure_ascii=False), 'application/json; charset=utf-8')
-
+    
     def do_GET(self):
         parsed = urllib.parse.urlparse(self.path)
         p = parsed.path
